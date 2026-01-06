@@ -1,27 +1,11 @@
 name: Task
-description: A tracked piece of work (non-bug)
-title: "task: <short summary>"
-labels: ["type:chore"]
+description: A task
+title: "[Task]: "
+labels: ["task"]
 body:
   - type: textarea
-    id: work
+    id: description
     attributes:
-      label: Work items
-      placeholder: |
-        - [ ] ...
-        - [ ] ...
+      label: Description
     validations:
       required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - core
-        - sys
-        - data
-        - intel
-        - docs
-        - infra
-    validations:
-      required: false
