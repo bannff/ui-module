@@ -1,11 +1,13 @@
 from typing import Dict, Any, Optional
 from ..models import SessionState
 
+
 class MemoryStore:
     """
     A simple in-memory store for session states.
     In a real production environment, this would be backed by Redis or a DB.
     """
+
     def __init__(self):
         self._store: Dict[str, SessionState] = {}
 
@@ -17,7 +19,12 @@ class MemoryStore:
             self._store[session_id] = SessionState(session_id=session_id)
         return self._store[session_id]
 
-    def update_session(self, session_id: str, data: Optional[Dict[str, Any]] = None, current_path: Optional[str] = None) -> SessionState:
+    def update_session(
+        self,
+        session_id: str,
+        data: Optional[Dict[str, Any]] = None,
+        current_path: Optional[str] = None,
+    ) -> SessionState:
         """
         Updates a session's data or path.
         """

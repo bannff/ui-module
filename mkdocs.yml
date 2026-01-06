@@ -1,0 +1,11 @@
+site_name: UI Module (MCP-UI)
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Integration: plug-n-play.md
+  - Architecture: steering.md
+
+plugins:
+  - search

@@ -1,9 +1,11 @@
 from typing import Dict, Optional
 
+
 class Router:
     """
     Maps paths to view IDs (filenames).
     """
+
     def __init__(self, routes: Optional[Dict[str, str]] = None):
         self.routes = routes or {}
 
@@ -16,11 +18,11 @@ class Router:
         # 1. Check explicit routes
         if path in self.routes:
             return self.routes[path]
-        
+
         # 2. Implicit mapping (e.g. /dashboard -> dashboard)
-        clean_path = path.lstrip('/')
+        clean_path = path.lstrip("/")
         if not clean_path:
-             # Default to 'index' if root
-             return self.routes.get("/", "index")
-             
+            # Default to 'index' if root
+            return self.routes.get("/", "index")
+
         return clean_path

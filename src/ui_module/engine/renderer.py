@@ -1,35 +1,37 @@
 import yaml
 import os
-from typing import Any, Dict, Optional
-from jinja2 import Environment, FileSystemLoader, Template
+from typing import Any, Dict
+from jinja2 import Environment, FileSystemLoader
 from .models import View
+
 
 class Renderer:
     """
     Responsible for loading, templating, and parsing View definitions.
     """
+
     def __init__(self, config_dir: str):
         self.config_dir = config_dir
         self.views_dir = os.path.join(config_dir, "views")
         # Ensure views directory exists
         if not os.path.exists(self.views_dir):
             os.makedirs(self.views_dir, exist_ok=True)
-            
+
         self.jinja_env = Environment(loader=FileSystemLoader(self.views_dir))
 
-    def render_view(self, view_path: str, context:  Dict[str, Any]) -> View:
+    def render_view(self, view_path: str, context: Dict[str, Any]) -> View:
         """
         Loads a view definition, renders it with context, and parses it into a View model.
         view_path: relative path to the view file inside config/views (e.g., "dashboard.yaml")
         """
         if not view_path.endswith(".yaml") and not view_path.endswith(".yml"):
-             view_path += ".yaml"
+            view_path += ".yaml"
 
         try:
             template = self.jinja_env.get_template(view_path)
             rendered_yaml = template.render(**context)
             view_dict = yaml.safe_load(rendered_yaml)
-            
+
             return View(**view_dict)
         except Exception as e:
             # In a real app, specific custom exceptions would be better
