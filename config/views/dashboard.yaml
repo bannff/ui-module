@@ -1,0 +1,19 @@
+id: dashboard
+title: "Dashboard"
+layout:
+  type: container
+  props:
+    direction: column
+    gap: 16
+  children:
+    - type: text
+      props:
+        content: "Welcome, {{ user.id or 'Guest' }}!"
+        variant: h1
+    - type: card
+      props:
+        title: "Stats"
+      children:
+        - type: text
+          props:
+            content: "Active Sessions: {{ session.active_count | default(0) }}"

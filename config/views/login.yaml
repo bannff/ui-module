@@ -1,0 +1,20 @@
+id: login
+title: "Login"
+layout:
+  type: form
+  props:
+    action: "login_submit"
+  children:
+    - type: input
+      props:
+        name: "username"
+        label: "Username"
+    - type: input
+      props:
+        name: "password"
+        type: "password"
+        label: "Password"
+    - type: button
+      props:
+        label: "Sign In"
+        type: "submit"

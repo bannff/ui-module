@@ -1,0 +1,6 @@
+title: "My MCP UI App"
+theme: "dark"
+routes:
+  "/": "dashboard"
+  "/login": "login"
+  "/profile": "profile"
