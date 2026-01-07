@@ -1,11 +1,19 @@
-site_name: UI Module (MCP-UI)
+site_name: UI Module
+site_description: Agent-driven UI management with real-time push updates
 theme:
   name: material
+  palette:
+    primary: indigo
 
 nav:
   - Home: index.md
-  - Integration: plug-n-play.md
-  - Architecture: steering.md
+  - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  - Tools Reference: tools-reference.md
+  - Architecture: architecture.md
+  - MCP-UI Integration: mcpui-integration.md
 
-plugins:
-  - search
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
