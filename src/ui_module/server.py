@@ -1,9 +1,11 @@
 """MCP Server for UI Module.
 
-Provides tools for agent-driven UI manipulation:
+Provides tools, resources, and prompts for agent-driven UI manipulation:
 - Deterministic tools (capabilities, health, schema)
 - Operational tools (view/component CRUD with context envelope)
 - Authoring tools (security-gated, config_dir scoped)
+- Resources (component schemas, templates, docs)
+- Prompts (guided UI creation patterns)
 """
 
 import os
@@ -15,6 +17,8 @@ from mcp.server.fastmcp import FastMCP
 from .engine.runtime import get_runtime, UIRuntime
 from .engine.envelope import ContextEnvelope
 from .engine.models import ComponentType
+from . import resources as res
+from . import prompts as prm
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +38,140 @@ def _get_runtime() -> UIRuntime:
 def _parse_envelope(envelope: dict[str, Any] | None) -> ContextEnvelope:
     """Parse context envelope from tool input."""
     return ContextEnvelope.from_dict(envelope)
+
+
+# ============================================================================
+# MCP Resources - Read-only data for agent context
+# ============================================================================
+
+@mcp.resource("ui://components")
+def resource_all_components() -> str:
+    """List all available UI component types with their schemas."""
+    runtime = _get_runtime()
+    result = res.get_all_components_resource(runtime.view_manager.registry)
+    return result["content"]
+
+
+@mcp.resource("ui://components/{component_type}")
+def resource_component_schema(component_type: str) -> str:
+    """Get the JSON schema for a specific component type."""
+    runtime = _get_runtime()
+    result = res.get_component_schema_resource(component_type, runtime.view_manager.registry)
+    return result["content"]
+
+
+@mcp.resource("ui://templates")
+def resource_all_templates() -> str:
+    """List all available view templates."""
+    result = res.get_all_templates_resource()
+    return result["content"]
+
+
+@mcp.resource("ui://templates/{template_name}")
+def resource_template(template_name: str) -> str:
+    """Get a specific view template with layout and component suggestions."""
+    result = res.get_template_resource(template_name)
+    return result["content"]
+
+
+@mcp.resource("ui://views/{view_id}")
+def resource_view(view_id: str) -> str:
+    """Get a specific view's current state."""
+    runtime = _get_runtime()
+    result = res.get_view_resource(view_id, runtime.view_manager)
+    return result["content"]
+
+
+@mcp.resource("ui://docs/{doc_name}")
+def resource_docs(doc_name: str) -> str:
+    """Get documentation content."""
+    result = res.get_docs_resource(doc_name)
+    return result["content"]
+
+
+# ============================================================================
+# MCP Prompts - Pre-built templates for common UI tasks
+# ============================================================================
+
+@mcp.prompt()
+def create_dashboard(name: str, purpose: str, metrics: str = "", data: str = "") -> str:
+    """Create a dashboard with metrics, charts, and tables.
+    
+    Args:
+        name: Dashboard name
+        purpose: What the dashboard is for
+        metrics: List of KPIs to display
+        data: Data to visualize
+    """
+    result = prm.get_prompt("create_dashboard", {
+        "name": name,
+        "purpose": purpose,
+        "metrics": metrics or "(not specified)",
+        "data": data or "(not specified)",
+    })
+    return result["messages"][0]["content"]["text"]
+
+
+@mcp.prompt()
+def add_visualization(view_id: str, data: str, title: str = "") -> str:
+    """Add a data visualization to an existing view.
+    
+    Args:
+        view_id: Target view ID
+        data: Data to visualize (JSON)
+        title: Chart title
+    """
+    result = prm.get_prompt("add_visualization", {
+        "view_id": view_id,
+        "data": data,
+        "title": title or "(auto-generate)",
+    })
+    return result["messages"][0]["content"]["text"]
+
+
+@mcp.prompt()
+def design_form(purpose: str, fields: str) -> str:
+    """Create a form for data collection.
+    
+    Args:
+        purpose: What the form collects
+        fields: Fields to include
+    """
+    result = prm.get_prompt("design_form", {
+        "purpose": purpose,
+        "fields": fields,
+    })
+    return result["messages"][0]["content"]["text"]
+
+
+@mcp.prompt()
+def update_metrics(view_id: str, updates: str) -> str:
+    """Update multiple metrics on a dashboard.
+    
+    Args:
+        view_id: Dashboard view ID
+        updates: Metric updates (label -> new value)
+    """
+    result = prm.get_prompt("update_metrics", {
+        "view_id": view_id,
+        "updates": updates,
+    })
+    return result["messages"][0]["content"]["text"]
+
+
+@mcp.prompt()
+def create_status_page(name: str, systems: str) -> str:
+    """Create a system status/health page.
+    
+    Args:
+        name: Status page name
+        systems: Systems to monitor
+    """
+    result = prm.get_prompt("create_status_page", {
+        "name": name,
+        "systems": systems,
+    })
+    return result["messages"][0]["content"]["text"]
 
 
 # ============================================================================
@@ -122,6 +260,34 @@ def ui_list_adapters() -> dict[str, Any]:
             "default": runtime.settings.default_adapter if runtime.settings else "json",
         }
     return {"adapters": [], "default": "json"}
+
+
+@mcp.tool()
+def ui_list_resources() -> dict[str, Any]:
+    """List all available MCP resources.
+    
+    Returns URIs for component schemas, templates, views, and documentation
+    that agents can read for context.
+    """
+    runtime = _get_runtime()
+    resources = res.list_all_resources(runtime.view_manager.registry, runtime.view_manager)
+    return {
+        "resources": resources,
+        "total": len(resources),
+    }
+
+
+@mcp.tool()
+def ui_list_prompts() -> dict[str, Any]:
+    """List all available MCP prompts.
+    
+    Returns prompt names and descriptions for guided UI creation.
+    """
+    prompts = prm.list_prompts()
+    return {
+        "prompts": prompts,
+        "total": len(prompts),
+    }
 
 
 # ============================================================================
@@ -337,15 +503,11 @@ def ui_subscribe(
 
 def _is_authoring_enabled() -> bool:
     """Check if authoring tools are enabled."""
-    # Check environment variable first
     if os.environ.get("AUTHORING_ENABLED", "").lower() == "true":
         return True
-    
-    # Check settings
     runtime = _get_runtime()
     if runtime.settings and runtime.settings.authoring_enabled:
         return True
-    
     return False
 
 
@@ -354,7 +516,6 @@ def ui_authoring_get_status() -> dict[str, Any]:
     """Get authoring tools status.
     
     Returns enabled flag, config_dir, allowed paths, and schema versions.
-    
     This tool is always available to check authoring status.
     """
     runtime = _get_runtime()
@@ -378,16 +539,12 @@ def ui_create_view(
         layout_columns: Number of columns for grid layout
         envelope: Optional context envelope for correlation/audit
     
-    Returns the created view.
-    Requires AUTHORING_ENABLED=true.
+    Returns the created view. Requires AUTHORING_ENABLED=true.
     """
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
@@ -398,44 +555,23 @@ def ui_create_view(
         layout["columns"] = layout_columns
     
     view = runtime.view_manager.create_view(name=name, view_id=view_id, layout=layout)
-    return {
-        "created": True,
-        "view": view.to_dict(),
-        "request_id": ctx.request_id,
-    }
+    return {"created": True, "view": view.to_dict(), "request_id": ctx.request_id}
 
 
 @mcp.tool()
-def ui_delete_view(
-    view_id: str,
-    envelope: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Delete a view.
-    
-    Args:
-        view_id: The view ID to delete
-        envelope: Optional context envelope for correlation/audit
-    
-    Requires AUTHORING_ENABLED=true.
-    """
+def ui_delete_view(view_id: str, envelope: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Delete a view. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
         return {"error": "Runtime not initialized", "request_id": ctx.request_id}
     
     deleted = runtime.view_manager.delete_view(view_id)
-    return {
-        "deleted": deleted,
-        "view_id": view_id,
-        "request_id": ctx.request_id,
-    }
+    return {"deleted": deleted, "view_id": view_id, "request_id": ctx.request_id}
 
 
 @mcp.tool()
@@ -448,27 +584,11 @@ async def ui_add_component(
     position: int | None = None,
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Add a component to a view.
-    
-    Args:
-        view_id: Target view ID
-        component_type: Type of component (text, chart, table, metric, etc.)
-        props: Component properties (varies by type)
-        styles: CSS styles to apply
-        component_id: Optional custom component ID
-        position: Optional position in the component list
-        envelope: Optional context envelope for correlation/audit
-    
-    The component is added and pushed to all subscribed clients.
-    Requires AUTHORING_ENABLED=true.
-    """
+    """Add a component to a view. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
@@ -476,31 +596,16 @@ async def ui_add_component(
     
     try:
         component = runtime.view_manager.create_component(
-            component_type=component_type,
-            props=props,
-            styles=styles,
-            component_id=component_id,
+            component_type=component_type, props=props, styles=styles, component_id=component_id,
         )
-    except ValueError as e:
-        return {
-            "error": f"Invalid component type: {component_type}",
-            "request_id": ctx.request_id,
-        }
+    except ValueError:
+        return {"error": f"Invalid component type: {component_type}", "request_id": ctx.request_id}
     
     view = await runtime.view_manager.add_component(view_id, component, position)
-    
     if not view:
-        return {
-            "error": f"View not found: {view_id}",
-            "request_id": ctx.request_id,
-        }
+        return {"error": f"View not found: {view_id}", "request_id": ctx.request_id}
     
-    return {
-        "added": True,
-        "component": component.to_dict(),
-        "view_version": view.version,
-        "request_id": ctx.request_id,
-    }
+    return {"added": True, "component": component.to_dict(), "view_version": view.version, "request_id": ctx.request_id}
 
 
 @mcp.tool()
@@ -511,117 +616,53 @@ async def ui_update_component(
     styles: dict[str, str] | None = None,
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Update a component's properties or styles.
-    
-    Args:
-        view_id: View containing the component
-        component_id: Component to update
-        props: Properties to update (merged with existing)
-        styles: Styles to update (merged with existing)
-        envelope: Optional context envelope for correlation/audit
-    
-    The update is pushed to all subscribed clients.
-    Requires AUTHORING_ENABLED=true.
-    """
+    """Update a component's properties or styles. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
         return {"error": "Runtime not initialized", "request_id": ctx.request_id}
     
     component = await runtime.view_manager.update_component(view_id, component_id, props, styles)
-    
     if not component:
-        return {
-            "error": f"Component not found: {component_id} in view {view_id}",
-            "request_id": ctx.request_id,
-        }
+        return {"error": f"Component not found: {component_id} in view {view_id}", "request_id": ctx.request_id}
     
-    return {
-        "updated": True,
-        "component": component.to_dict(),
-        "request_id": ctx.request_id,
-    }
+    return {"updated": True, "component": component.to_dict(), "request_id": ctx.request_id}
 
 
 @mcp.tool()
-async def ui_remove_component(
-    view_id: str,
-    component_id: str,
-    envelope: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Remove a component from a view.
-    
-    Args:
-        view_id: View containing the component
-        component_id: Component to remove
-        envelope: Optional context envelope for correlation/audit
-    
-    The removal is pushed to all subscribed clients.
-    Requires AUTHORING_ENABLED=true.
-    """
+async def ui_remove_component(view_id: str, component_id: str, envelope: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Remove a component from a view. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
         return {"error": "Runtime not initialized", "request_id": ctx.request_id}
     
     removed = await runtime.view_manager.remove_component(view_id, component_id)
-    
-    return {
-        "removed": removed,
-        "component_id": component_id,
-        "view_id": view_id,
-        "request_id": ctx.request_id,
-    }
+    return {"removed": removed, "component_id": component_id, "view_id": view_id, "request_id": ctx.request_id}
 
 
 @mcp.tool()
-async def ui_push_view(
-    view_id: str,
-    envelope: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Push full view state to all subscribed clients.
-    
-    Args:
-        view_id: View to push
-        envelope: Optional context envelope for correlation/audit
-    
-    Forces a full refresh of the view on all connected clients.
-    Requires AUTHORING_ENABLED=true.
-    """
+async def ui_push_view(view_id: str, envelope: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Push full view state to all subscribed clients. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
         return {"error": "Runtime not initialized", "request_id": ctx.request_id}
     
     recipients = await runtime.view_manager.push_view(view_id)
-    
-    return {
-        "pushed": True,
-        "view_id": view_id,
-        "recipients": recipients,
-        "request_id": ctx.request_id,
-    }
+    return {"pushed": True, "view_id": view_id, "recipients": recipients, "request_id": ctx.request_id}
 
 
 @mcp.tool()
@@ -632,71 +673,37 @@ async def ui_create_dashboard(
     tables: list[dict[str, Any]] | None = None,
     envelope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Create a complete dashboard with multiple components.
-    
-    Args:
-        name: Dashboard name
-        metrics: List of metric configs [{label, value, unit, trend}]
-        charts: List of chart configs [{title, chart_type, data}]
-        tables: List of table configs [{columns, rows}]
-        envelope: Optional context envelope for correlation/audit
-    
-    Convenience tool for creating a full dashboard in one call.
-    Requires AUTHORING_ENABLED=true.
-    """
+    """Create a complete dashboard with multiple components. Requires AUTHORING_ENABLED=true."""
     ctx = _parse_envelope(envelope)
     
     if not _is_authoring_enabled():
-        return {
-            "error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true",
-            "request_id": ctx.request_id,
-        }
+        return {"error": "Authoring tools are disabled. Set AUTHORING_ENABLED=true", "request_id": ctx.request_id}
     
     runtime = _get_runtime()
     if not runtime.view_manager:
         return {"error": "Runtime not initialized", "request_id": ctx.request_id}
     
-    # Create view with grid layout
-    view = runtime.view_manager.create_view(
-        name=name,
-        layout={"type": "grid", "columns": 3},
-    )
-    
+    view = runtime.view_manager.create_view(name=name, layout={"type": "grid", "columns": 3})
     components_added = []
     
-    # Add metrics
     for metric in (metrics or []):
-        component = runtime.view_manager.create_component(
-            component_type=ComponentType.METRIC,
-            props=metric,
-        )
+        component = runtime.view_manager.create_component(component_type=ComponentType.METRIC, props=metric)
         await runtime.view_manager.add_component(view.id, component)
         components_added.append(component.id)
     
-    # Add charts
     for chart in (charts or []):
-        component = runtime.view_manager.create_component(
-            component_type=ComponentType.CHART,
-            props=chart,
-        )
+        component = runtime.view_manager.create_component(component_type=ComponentType.CHART, props=chart)
         await runtime.view_manager.add_component(view.id, component)
         components_added.append(component.id)
     
-    # Add tables
     for table in (tables or []):
-        component = runtime.view_manager.create_component(
-            component_type=ComponentType.TABLE,
-            props=table,
-        )
+        component = runtime.view_manager.create_component(component_type=ComponentType.TABLE, props=table)
         await runtime.view_manager.add_component(view.id, component)
         components_added.append(component.id)
     
     return {
-        "created": True,
-        "view_id": view.id,
-        "view_name": name,
-        "components_added": len(components_added),
-        "component_ids": components_added,
+        "created": True, "view_id": view.id, "view_name": name,
+        "components_added": len(components_added), "component_ids": components_added,
         "request_id": ctx.request_id,
     }
 

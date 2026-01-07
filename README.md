@@ -1,191 +1,180 @@
 # UI Module
 
-A Model Context Protocol (MCP) server for agent-driven UI management with real-time push updates. Talk to an agent, and it updates your frontend in real-time.
+[![CI](https://github.com/bannff/ui-module/actions/workflows/ci.yml/badge.svg)](https://github.com/bannff/ui-module/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/bannff/ui-module/branch/master/graph/badge.svg)](https://codecov.io/gh/bannff/ui-module)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+MCP-first Server-Driven UI Framework - a portable lego block for agent-driven user interfaces.
 
-- **Component Registry** - Built-in UI primitives (charts, tables, metrics, forms, etc.)
-- **View Management** - Create, update, and delete views via MCP tools
-- **Real-time Push** - WebSocket/SSE updates to connected frontends
-- **Multiple Adapters** - JSON for custom frontends, MCP-UI for native client support
-- **Security-Gated Authoring** - Protected tools for UI manipulation
+## Overview
 
-## How It Works
+The UI Module enables AI agents to create, manage, and update user interfaces through MCP tools. It supports two modes:
 
-```
-┌─────────────────┐     MCP      ┌──────────────┐     WebSocket     ┌─────────────┐
-│  MCP Client     │ ──────────►  │  ui-module   │  ───────────────► │  Your App   │
-│  (Claude, etc)  │              │  (MCP Server)│                   │  (React/Web)│
-└─────────────────┘              └──────────────┘                   └─────────────┘
-```
+1. **JSON Adapter Mode** (works today): Agents author UI as JSON, which custom frontends render
+2. **MCP-UI Mode** (future-ready): Native MCP client support when available
 
-1. You talk to an agent in your MCP client
-2. Agent calls UI module tools to create/update views
-3. UI module pushes updates to your connected frontend
-4. Your frontend renders the changes in real-time
+## Key Features
 
-## Architecture
-
-```
-src/ui_module/
-├── engine/                    # Core business logic
-│   ├── models.py             # UIComponent, UIView, ViewUpdate
-│   ├── registry.py           # ComponentRegistry with built-in types
-│   ├── view_manager.py       # Central orchestrator
-│   ├── push_channel.py       # Real-time client updates
-│   ├── store/
-│   │   └── view_store.py     # View persistence
-│   └── adapters/
-│       ├── json_adapter.py   # JSON output for custom frontends
-│       └── mcpui_adapter.py  # MCP-UI protocol support
-└── server.py                 # MCP server with tool definitions
-```
+- **Component Registry**: 11 built-in component types (card, chart, form, table, etc.)
+- **ViewManager**: Orchestrates view lifecycle and component composition
+- **PushChannel**: Real-time WebSocket/SSE updates to connected frontends
+- **MCP Resources**: Self-documenting component schemas and templates
+- **MCP Prompts**: Guided workflows for common UI patterns
+- **Context Envelope**: Cross-module composition with tenant/session tracking
 
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/bannff/ui-module.git
-cd ui-module
-
-# Install dependencies
-uv sync
+pip install -e .
 ```
 
-## Configuration
-
-### Environment Variables
+## Quick Start
 
 ```bash
-AUTHORING_ENABLED=true    # Enable authoring tools
-```
+# Run the MCP server
+ui-module run --config-dir ./config
 
-### MCP Configuration
-
-```json
-{
-  "mcpServers": {
-    "ui": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/ui-module", "python", "-m", "ui_module.server"],
-      "env": {
-        "AUTHORING_ENABLED": "true"
-      }
-    }
-  }
-}
+# Or with Python
+python -m ui_module --config-dir ./config
 ```
 
 ## MCP Tools
 
-### Query Tools
-
+### Deterministic Tools (Query)
 | Tool | Description |
 |------|-------------|
-| `ui_list_views` | List all available views |
-| `ui_get_view` | Get a view (JSON or MCP-UI format) |
-| `ui_get_component_registry` | Get available component types |
-| `ui_get_push_channel_status` | Get connected clients |
-| `ui_list_adapters` | List render adapters |
-| `ui_get_view_history` | Get update history |
+| `ui_get_capabilities` | Returns module capabilities and feature flags |
+| `ui_health_check` | Service health and connectivity status |
+| `ui_describe_config_schema` | JSON schema for configuration |
+| `ui_get_view_registry` | List all registered views |
+| `ui_get_component_types` | Available component types |
 
-### Authoring Tools (Security-Gated)
-
+### Operational Tools (Stateful)
 | Tool | Description |
 |------|-------------|
-| `ui_create_view` | Create a new view |
-| `ui_delete_view` | Delete a view |
-| `ui_add_component` | Add component to view |
-| `ui_update_component` | Update component props/styles |
+| `ui_create_view` | Create a new view with components |
+| `ui_get_view` | Retrieve a view by ID |
+| `ui_update_view` | Update view properties |
+| `ui_delete_view` | Remove a view |
+| `ui_add_component` | Add component to a view |
+| `ui_update_component` | Update component properties |
 | `ui_remove_component` | Remove component from view |
-| `ui_push_view` | Force push view to clients |
-| `ui_create_dashboard` | Create complete dashboard |
+| `ui_render_view` | Render view for frontend consumption |
+| `ui_push_update` | Push real-time update to clients |
 
-### Client Connection Tools
-
+### Authoring Tools (Admin)
 | Tool | Description |
 |------|-------------|
-| `ui_connect_client` | Register client for updates |
-| `ui_disconnect_client` | Disconnect a client |
-| `ui_subscribe` | Subscribe to view updates |
+| `ui_authoring_get_status` | Authoring mode status |
+| `ui_authoring_register_component` | Register custom component type |
+| `ui_authoring_validate_view` | Validate view definition |
 
-## Usage Example
+## MCP Resources
 
-```python
-# Create a dashboard with metrics and charts
-await call_tool("ui_create_dashboard", {
-    "name": "Sales Dashboard",
-    "metrics": [
-        {"label": "Revenue", "value": "$50,000", "trend": "up"},
-        {"label": "Orders", "value": "1,234", "trend": "up"},
-    ],
-    "charts": [
-        {"title": "Sales by Region", "chart_type": "bar", "data": [...]}
-    ]
-})
+Resources provide self-documenting capabilities for agents:
 
-# Update a metric value
-await call_tool("ui_update_component", {
-    "view_id": "dashboard-1",
-    "component_id": "metric-revenue",
-    "props": {"value": "$55,000"}
-})
+| Resource URI | Description |
+|--------------|-------------|
+| `ui://components` | List all component types |
+| `ui://components/{type}/schema` | JSON schema for component |
+| `ui://templates` | Available UI templates |
+| `ui://templates/{name}` | Specific template structure |
+| `ui://views` | All registered views |
+| `ui://views/{id}` | Specific view state |
+| `ui://docs/getting-started` | Inline getting started guide |
+| `ui://docs/best-practices` | Best practices documentation |
+
+## MCP Prompts
+
+Prompts guide agents toward effective UI creation:
+
+| Prompt | Description |
+|--------|-------------|
+| `create_dashboard` | Multi-panel dashboard with metrics/charts |
+| `add_visualization` | Add chart to existing view |
+| `design_form` | Data entry form with validation |
+| `update_metrics` | Update metric displays |
+| `create_status_page` | System status monitoring page |
+
+## Architecture
+
+```
+ui-module/
+├── src/ui_module/
+│   ├── engine/           # Core library (no MCP imports)
+│   │   ├── models.py     # Pydantic models
+│   │   ├── registry.py   # Component registry
+│   │   ├── view_manager.py
+│   │   ├── push_channel.py
+│   │   ├── envelope.py   # Context envelope
+│   │   ├── config.py     # Config loader
+│   │   ├── runtime.py    # UIRuntime orchestrator
+│   │   └── adapters/     # Render adapters
+│   ├── server.py         # MCP server (interface)
+│   ├── resources.py      # MCP resources
+│   ├── prompts.py        # MCP prompts
+│   └── cli.py            # CLI entrypoint
+├── config/
+│   ├── settings.yaml
+│   └── views/            # View definitions
+└── tests/
 ```
 
-## Component Types
+## Configuration
 
-| Type | Description |
-|------|-------------|
-| `text` | Text with variants (h1, h2, body, etc.) |
-| `chart` | Line, bar, pie, area charts |
-| `table` | Sortable/filterable tables |
-| `metric` | KPI cards with trends |
-| `card` | Container cards |
-| `alert` | Info/success/warning/error alerts |
-| `progress` | Linear/circular progress |
-| `form` | Input forms |
-| `button` | Action buttons |
-| `image` | Images |
-| `list` | Ordered/unordered lists |
-
-## MCP-UI Support
-
-The module includes an MCP-UI adapter for future native client rendering:
-
-```python
-# Get view as MCP-UI UIResource
-result = await call_tool("ui_get_view", {
-    "view_id": "dashboard",
-    "adapter": "mcp-ui"
-})
-# Returns UIResource with inline HTML
+```yaml
+# config/settings.yaml
+ui:
+  default_adapter: json
+  enable_push: true
+  push_transport: websocket
+  
+authoring:
+  enabled: false  # Enable with UI_ENABLE_AUTHORING_TOOLS=1
+  
+components:
+  custom_dir: ./config/components
 ```
 
-See [MCP-UI Integration](docs/mcpui-integration.md) for details.
+## How It Works
 
-## Testing
+1. **Agent creates view**: Calls `ui_create_view` with component structure
+2. **Module stores view**: ViewManager persists and validates
+3. **Frontend connects**: Via WebSocket or polling
+4. **Agent renders**: Calls `ui_render_view` to get JSON
+5. **Frontend displays**: Renders JSON as actual UI
+6. **Agent updates**: Calls `ui_push_update` for real-time changes
 
-```bash
-uv run pytest
-```
+The frontend is a "dumb renderer" - it doesn't need rebuilding when UI changes. The agent controls everything.
 
 ## Documentation
 
+- [Getting Started](docs/getting-started.md)
+- [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
+- [Tools Reference](docs/tools-reference.md)
+- [MCP Resources](docs/resources.md)
+- [MCP Prompts](docs/prompts.md)
+- [MCP-UI Integration](docs/mcpui-integration.md)
+- [Steering Guide](STEERING.md)
+
+## Development
+
 ```bash
-uv run mkdocs serve
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Type checking
+mypy src/
+
+# Linting
+ruff check src/ tests/
 ```
-
-## Related Modules
-
-- [telemetry-module](https://github.com/bannff/telemetry-module) - OpenTelemetry integration
-- [notification-module](https://github.com/bannff/notification-module) - Multi-channel notifications
-- [permissions-module](https://github.com/bannff/permissions-module) - RBAC and audit logging
-- [events-module](https://github.com/bannff/events-module) - Event bus with subscriptions
-- [knowledge-base-module](https://github.com/bannff/knowledge-base-module) - Vector search with ChromaDB
-- [backend-module](https://github.com/bannff/backend-module) - Database adapter registry
-- [blockchain-module](https://github.com/bannff/blockchain-module) - Blockchain/DLT integration
-- [payments-module](https://github.com/bannff/payments-module) - Payment processing
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT
