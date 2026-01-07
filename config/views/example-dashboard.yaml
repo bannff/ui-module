@@ -1,0 +1,55 @@
+# Example Dashboard View
+# Place view definitions in config/views/*.yaml
+
+id: example-dashboard
+name: Example Dashboard
+description: A sample dashboard demonstrating UI module capabilities
+
+layout:
+  type: grid
+  columns: 3
+
+components:
+  - id: welcome-text
+    type: text
+    props:
+      content: Welcome to the UI Module
+      variant: h1
+
+  - id: users-metric
+    type: metric
+    props:
+      label: Active Users
+      value: 1,234
+      trend: up
+      trend_value: "+12%"
+
+  - id: revenue-metric
+    type: metric
+    props:
+      label: Revenue
+      value: "$50,000"
+      unit: USD
+      trend: up
+      trend_value: "+8%"
+
+  - id: orders-metric
+    type: metric
+    props:
+      label: Orders
+      value: 567
+      trend: flat
+
+  - id: status-alert
+    type: alert
+    props:
+      message: All systems operational
+      severity: success
+
+tags:
+  - example
+  - dashboard
+
+metadata:
+  author: ui-module
+  version: "1.0"

@@ -1,6 +1,28 @@
-title: "My MCP UI App"
-theme: "dark"
-routes:
-  "/": "dashboard"
-  "/login": "login"
-  "/profile": "profile"
+# UI Module Settings
+# See STEERING.md for full documentation
+
+# Authoring tools (disabled by default for security)
+authoring_enabled: false
+
+# Push channel settings
+push_enabled: true
+max_clients: 100
+
+# Storage backend (memory, redis, filesystem)
+storage_backend: memory
+# storage_path: ./data/views  # For filesystem backend
+
+# Render adapters
+default_adapter: json
+enabled_adapters:
+  - json
+  - mcp-ui
+
+# Limits
+max_views: 1000
+max_components_per_view: 100
+max_history_entries: 1000
+
+# Feature flags
+feature_flags:
+  experimental_charts: false
