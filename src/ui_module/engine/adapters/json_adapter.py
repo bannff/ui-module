@@ -1,14 +1,12 @@
 """JSON adapter for generic frontend consumption."""
 
-from typing import Any
-
+from ..models import UIComponent, UIView
 from .base import RenderAdapter, RenderResult
-from ..models import UIView, UIComponent
 
 
 class JsonAdapter(RenderAdapter):
     """Renders views as JSON for consumption by any frontend.
-    
+
     This is the default adapter - it outputs a JSON structure
     that frontends can interpret and render however they want.
     """

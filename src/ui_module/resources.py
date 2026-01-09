@@ -11,7 +11,7 @@ from typing import Any
 def get_component_schema_resource(component_type: str, registry) -> dict[str, Any]:
     """Get schema resource for a component type."""
     from .engine.models import ComponentType
-    
+
     try:
         comp_type = ComponentType(component_type)
         definition = registry.get(comp_type)
@@ -21,19 +21,22 @@ def get_component_schema_resource(component_type: str, registry) -> dict[str, An
                 "name": f"{definition.name} Component Schema",
                 "description": definition.description,
                 "mimeType": "application/json",
-                "content": json.dumps({
-                    "type": component_type,
-                    "name": definition.name,
-                    "description": definition.description,
-                    "schema": definition.schema,
-                    "default_props": definition.default_props,
-                    "default_styles": definition.default_styles,
-                    "example": _get_component_example(component_type),
-                }, indent=2),
+                "content": json.dumps(
+                    {
+                        "type": component_type,
+                        "name": definition.name,
+                        "description": definition.description,
+                        "schema": definition.schema,
+                        "default_props": definition.default_props,
+                        "default_styles": definition.default_styles,
+                        "example": _get_component_example(component_type),
+                    },
+                    indent=2,
+                ),
             }
     except ValueError:
         pass
-    
+
     return {
         "uri": f"ui://components/{component_type}",
         "name": f"Unknown Component: {component_type}",
@@ -46,29 +49,34 @@ def get_all_components_resource(registry) -> dict[str, Any]:
     """Get resource listing all available components."""
     components = []
     for defn in registry.list_components():
-        components.append({
-            "type": defn.component_type.value,
-            "name": defn.name,
-            "description": defn.description,
-            "schema": defn.schema,
-        })
-    
+        components.append(
+            {
+                "type": defn.component_type.value,
+                "name": defn.name,
+                "description": defn.description,
+                "schema": defn.schema,
+            }
+        )
+
     return {
         "uri": "ui://components",
         "name": "All UI Components",
         "description": "Complete list of available UI component types with their schemas",
         "mimeType": "application/json",
-        "content": json.dumps({
-            "components": components,
-            "total": len(components),
-        }, indent=2),
+        "content": json.dumps(
+            {
+                "components": components,
+                "total": len(components),
+            },
+            indent=2,
+        ),
     }
 
 
 def get_template_resource(template_name: str) -> dict[str, Any]:
     """Get a view template resource."""
     templates = _get_templates()
-    
+
     if template_name in templates:
         template = templates[template_name]
         return {
@@ -78,7 +86,7 @@ def get_template_resource(template_name: str) -> dict[str, Any]:
             "mimeType": "application/json",
             "content": json.dumps(template, indent=2),
         }
-    
+
     return {
         "uri": f"ui://templates/{template_name}",
         "name": f"Unknown Template: {template_name}",
@@ -90,23 +98,29 @@ def get_template_resource(template_name: str) -> dict[str, Any]:
 def get_all_templates_resource() -> dict[str, Any]:
     """Get resource listing all available templates."""
     templates = _get_templates()
-    
+
     return {
         "uri": "ui://templates",
         "name": "View Templates",
         "description": "Pre-built view templates for common UI patterns",
         "mimeType": "application/json",
-        "content": json.dumps({
-            "templates": list(templates.keys()),
-            "details": {k: {"name": v["name"], "description": v["description"]} for k, v in templates.items()},
-        }, indent=2),
+        "content": json.dumps(
+            {
+                "templates": list(templates.keys()),
+                "details": {
+                    k: {"name": v["name"], "description": v["description"]}
+                    for k, v in templates.items()
+                },
+            },
+            indent=2,
+        ),
     }
 
 
 def get_view_resource(view_id: str, view_manager) -> dict[str, Any]:
     """Get a specific view as a resource."""
     view = view_manager.get_view(view_id)
-    
+
     if view:
         return {
             "uri": f"ui://views/{view_id}",
@@ -115,7 +129,7 @@ def get_view_resource(view_id: str, view_manager) -> dict[str, Any]:
             "mimeType": "application/json",
             "content": json.dumps(view.to_dict(), indent=2),
         }
-    
+
     return {
         "uri": f"ui://views/{view_id}",
         "name": f"Unknown View: {view_id}",
@@ -127,7 +141,7 @@ def get_view_resource(view_id: str, view_manager) -> dict[str, Any]:
 def get_docs_resource(doc_name: str) -> dict[str, Any]:
     """Get documentation resource."""
     docs = _get_docs()
-    
+
     if doc_name in docs:
         doc = docs[doc_name]
         return {
@@ -137,7 +151,7 @@ def get_docs_resource(doc_name: str) -> dict[str, Any]:
             "mimeType": "text/markdown",
             "content": doc["content"],
         }
-    
+
     return {
         "uri": f"ui://docs/{doc_name}",
         "name": f"Unknown Doc: {doc_name}",
@@ -149,65 +163,79 @@ def get_docs_resource(doc_name: str) -> dict[str, Any]:
 def list_all_resources(registry, view_manager) -> list[dict[str, Any]]:
     """List all available resources."""
     resources = []
-    
+
     # Component schemas
-    resources.append({
-        "uri": "ui://components",
-        "name": "All UI Components",
-        "description": "Complete list of available UI component types",
-        "mimeType": "application/json",
-    })
-    
+    resources.append(
+        {
+            "uri": "ui://components",
+            "name": "All UI Components",
+            "description": "Complete list of available UI component types",
+            "mimeType": "application/json",
+        }
+    )
+
     for defn in registry.list_components():
-        resources.append({
-            "uri": f"ui://components/{defn.component_type.value}",
-            "name": f"{defn.name} Schema",
-            "description": defn.description,
-            "mimeType": "application/json",
-        })
-    
+        resources.append(
+            {
+                "uri": f"ui://components/{defn.component_type.value}",
+                "name": f"{defn.name} Schema",
+                "description": defn.description,
+                "mimeType": "application/json",
+            }
+        )
+
     # Templates
-    resources.append({
-        "uri": "ui://templates",
-        "name": "View Templates",
-        "description": "Pre-built view templates",
-        "mimeType": "application/json",
-    })
-    
-    for name, template in _get_templates().items():
-        resources.append({
-            "uri": f"ui://templates/{name}",
-            "name": template["name"],
-            "description": template["description"],
+    resources.append(
+        {
+            "uri": "ui://templates",
+            "name": "View Templates",
+            "description": "Pre-built view templates",
             "mimeType": "application/json",
-        })
-    
+        }
+    )
+
+    for name, template in _get_templates().items():
+        resources.append(
+            {
+                "uri": f"ui://templates/{name}",
+                "name": template["name"],
+                "description": template["description"],
+                "mimeType": "application/json",
+            }
+        )
+
     # Current views
     for view in view_manager.list_views():
-        resources.append({
-            "uri": f"ui://views/{view.id}",
-            "name": view.name,
-            "description": f"View with {len(view.components)} components",
-            "mimeType": "application/json",
-        })
-    
+        resources.append(
+            {
+                "uri": f"ui://views/{view.id}",
+                "name": view.name,
+                "description": f"View with {len(view.components)} components",
+                "mimeType": "application/json",
+            }
+        )
+
     # Documentation
     for name, doc in _get_docs().items():
-        resources.append({
-            "uri": f"ui://docs/{name}",
-            "name": doc["name"],
-            "description": doc["description"],
-            "mimeType": "text/markdown",
-        })
-    
+        resources.append(
+            {
+                "uri": f"ui://docs/{name}",
+                "name": doc["name"],
+                "description": doc["description"],
+                "mimeType": "text/markdown",
+            }
+        )
+
     # External resources
-    resources.append({
-        "uri": "https://mcpui.dev/guide/introduction",
-        "name": "MCP-UI Documentation",
-        "description": "Official MCP-UI protocol documentation",
-        "mimeType": "text/html",
-    })
-    
+    resources.append(
+        {
+            "uri": "https://mcpui.dev/guide/introduction",
+            "name": "MCP-UI Documentation",
+            "description": "Official MCP-UI protocol documentation",
+            "mimeType": "text/html",
+        }
+    )
+
     return resources
 
 
@@ -246,7 +274,11 @@ def _get_component_example(component_type: str) -> dict[str, Any]:
             "description": "Display a progress bar",
         },
         "card": {
-            "props": {"title": "Card Title", "subtitle": "Subtitle", "content": "Card content here"},
+            "props": {
+                "title": "Card Title",
+                "subtitle": "Subtitle",
+                "content": "Card content here",
+            },
             "description": "Display a card container",
         },
         "form": {

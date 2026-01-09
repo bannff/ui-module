@@ -7,11 +7,10 @@ All operational tools accept this envelope to enable:
 - Cross-module composition
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
-import uuid
-
 
 # Envelope attribute limits
 MAX_ATTRIBUTES = 32
@@ -23,30 +22,31 @@ ALLOWED_ATTRIBUTE_TYPES = (str, int, float, bool)
 @dataclass
 class ContextEnvelope:
     """Common context envelope for operational tools.
-    
+
     Enables clean composition across modules by providing
     consistent context for multi-tenancy, correlation, and audit.
     """
+
     # Multi-tenancy
     tenant_id: str | None = None
     principal_id: str | None = None
-    
+
     # Session/request tracking
     session_id: str | None = None
     request_id: str | None = field(default_factory=lambda: str(uuid.uuid4()))
     correlation_id: str | None = None
-    
+
     # UI-specific context
     view_id: str | None = None
     client_id: str | None = None
-    
+
     # Agent context
     agent_id: str | None = None
     tool_name: str | None = None
-    
+
     # Timing
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    
+
     # Custom attributes (strict validation)
     attributes: dict[str, str | int | float | bool] = field(default_factory=dict)
 
@@ -58,16 +58,19 @@ class ContextEnvelope:
         """Validate attribute constraints."""
         if len(self.attributes) > MAX_ATTRIBUTES:
             raise ValueError(f"Too many attributes: {len(self.attributes)} > {MAX_ATTRIBUTES}")
-        
+
         for key, value in self.attributes.items():
             if len(key) > MAX_ATTRIBUTE_KEY_LENGTH:
                 raise ValueError(f"Attribute key too long: {len(key)} > {MAX_ATTRIBUTE_KEY_LENGTH}")
-            
+
             if not isinstance(value, ALLOWED_ATTRIBUTE_TYPES):
                 raise ValueError(f"Invalid attribute type for '{key}': {type(value).__name__}")
-            
+
             if isinstance(value, str) and len(value) > MAX_ATTRIBUTE_VALUE_LENGTH:
-                raise ValueError(f"Attribute value too long for '{key}': {len(value)} > {MAX_ATTRIBUTE_VALUE_LENGTH}")
+                raise ValueError(
+                    f"Attribute value too long for '{key}': "
+                    f"{len(value)} > {MAX_ATTRIBUTE_VALUE_LENGTH}"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -90,7 +93,7 @@ class ContextEnvelope:
         """Create from dictionary, handling None gracefully."""
         if not data:
             return cls()
-        
+
         return cls(
             tenant_id=data.get("tenant_id"),
             principal_id=data.get("principal_id"),
@@ -101,7 +104,9 @@ class ContextEnvelope:
             client_id=data.get("client_id"),
             agent_id=data.get("agent_id"),
             tool_name=data.get("tool_name"),
-            timestamp=datetime.fromisoformat(data["timestamp"]) if data.get("timestamp") else datetime.utcnow(),
+            timestamp=datetime.fromisoformat(data["timestamp"])
+            if data.get("timestamp")
+            else datetime.utcnow(),
             attributes=data.get("attributes", {}),
         )
 

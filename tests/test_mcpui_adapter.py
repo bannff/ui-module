@@ -1,11 +1,10 @@
 """Tests for MCP-UI adapter."""
 
-import pytest
 from ui_module.engine import (
-    McpUiAdapter,
-    UIView,
-    UIComponent,
     ComponentType,
+    McpUiAdapter,
+    UIComponent,
+    UIView,
 )
 from ui_module.engine.adapters.mcpui_adapter import UIResourceType
 
@@ -27,12 +26,12 @@ class TestMcpUiAdapter:
         """Should render view as UIResource."""
         adapter = McpUiAdapter()
         view = UIView(id="test", name="Test View")
-        
+
         result = adapter.render_view(view)
-        
+
         assert result.adapter_type == "mcp-ui"
         assert result.content["type"] == "inline_html"
-        assert "<div class=\"mcp-ui-view\"" in result.content["content"]
+        assert '<div class="mcp-ui-view"' in result.content["content"]
 
     def test_render_text_component(self):
         """Should render text component."""
@@ -42,9 +41,9 @@ class TestMcpUiAdapter:
             component_type=ComponentType.TEXT,
             props={"content": "Hello World", "variant": "h1"},
         )
-        
+
         result = adapter.render_component(component)
-        
+
         assert "<h1" in result.content["content"]
         assert "Hello World" in result.content["content"]
 
@@ -56,10 +55,10 @@ class TestMcpUiAdapter:
             component_type=ComponentType.METRIC,
             props={"label": "Revenue", "value": "$50,000", "trend": "up"},
         )
-        
+
         result = adapter.render_component(component)
         content = result.content["content"]
-        
+
         assert "mcp-ui-metric" in content
         assert "Revenue" in content
         assert "$50,000" in content
@@ -76,10 +75,10 @@ class TestMcpUiAdapter:
                 "rows": [{"name": "Item 1", "value": 100}],
             },
         )
-        
+
         result = adapter.render_component(component)
         content = result.content["content"]
-        
+
         assert "<table" in content
         assert "<th>Name" in content
         assert "Item 1" in content
@@ -92,10 +91,10 @@ class TestMcpUiAdapter:
             component_type=ComponentType.ALERT,
             props={"message": "Warning!", "severity": "warning"},
         )
-        
+
         result = adapter.render_component(component)
         content = result.content["content"]
-        
+
         assert "mcp-ui-alert--warning" in content
         assert "Warning!" in content
 
@@ -106,14 +105,22 @@ class TestMcpUiAdapter:
             id="dashboard",
             name="Dashboard",
             components=[
-                UIComponent(id="m1", component_type=ComponentType.METRIC, props={"label": "Users", "value": 100}),
-                UIComponent(id="m2", component_type=ComponentType.METRIC, props={"label": "Sales", "value": 500}),
+                UIComponent(
+                    id="m1",
+                    component_type=ComponentType.METRIC,
+                    props={"label": "Users", "value": 100},
+                ),
+                UIComponent(
+                    id="m2",
+                    component_type=ComponentType.METRIC,
+                    props={"label": "Sales", "value": 500},
+                ),
             ],
         )
-        
+
         result = adapter.render_view(view)
         content = result.content["content"]
-        
+
         assert "Users" in content
         assert "Sales" in content
         assert result.metadata["component_count"] == 2
@@ -122,7 +129,7 @@ class TestMcpUiAdapter:
         """Should respect resource type configuration."""
         adapter = McpUiAdapter(resource_type=UIResourceType.INLINE_HTML)
         view = UIView(id="test", name="Test")
-        
+
         result = adapter.render_view(view)
-        
+
         assert result.content["type"] == "inline_html"

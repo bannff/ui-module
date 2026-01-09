@@ -8,6 +8,7 @@ from typing import Any, Protocol
 
 class ComponentType(str, Enum):
     """Built-in UI component types."""
+
     TEXT = "text"
     CHART = "chart"
     TABLE = "table"
@@ -24,6 +25,7 @@ class ComponentType(str, Enum):
 
 class ChartType(str, Enum):
     """Chart subtypes."""
+
     LINE = "line"
     BAR = "bar"
     PIE = "pie"
@@ -35,6 +37,7 @@ class ChartType(str, Enum):
 @dataclass
 class ComponentConfig:
     """Configuration for a UI component."""
+
     component_type: ComponentType
     props: dict[str, Any] = field(default_factory=dict)
     styles: dict[str, str] = field(default_factory=dict)
@@ -44,6 +47,7 @@ class ComponentConfig:
 @dataclass
 class UIComponent:
     """A renderable UI component."""
+
     id: str
     component_type: ComponentType
     props: dict[str, Any] = field(default_factory=dict)
@@ -73,14 +77,19 @@ class UIComponent:
             props=data.get("props", {}),
             styles=data.get("styles", {}),
             children=[cls.from_dict(c) for c in data.get("children", [])],
-            created_at=datetime.fromisoformat(data["created_at"]) if "created_at" in data else datetime.utcnow(),
-            updated_at=datetime.fromisoformat(data["updated_at"]) if "updated_at" in data else datetime.utcnow(),
+            created_at=datetime.fromisoformat(data["created_at"])
+            if "created_at" in data
+            else datetime.utcnow(),
+            updated_at=datetime.fromisoformat(data["updated_at"])
+            if "updated_at" in data
+            else datetime.utcnow(),
         )
 
 
 @dataclass
 class UIView:
     """A complete view/page containing components."""
+
     id: str
     name: str
     components: list[UIComponent] = field(default_factory=list)
@@ -113,14 +122,19 @@ class UIView:
             layout=data.get("layout", {}),
             metadata=data.get("metadata", {}),
             version=data.get("version", 1),
-            created_at=datetime.fromisoformat(data["created_at"]) if "created_at" in data else datetime.utcnow(),
-            updated_at=datetime.fromisoformat(data["updated_at"]) if "updated_at" in data else datetime.utcnow(),
+            created_at=datetime.fromisoformat(data["created_at"])
+            if "created_at" in data
+            else datetime.utcnow(),
+            updated_at=datetime.fromisoformat(data["updated_at"])
+            if "updated_at" in data
+            else datetime.utcnow(),
         )
 
 
 @dataclass
 class ViewUpdate:
     """An update to push to connected clients."""
+
     view_id: str
     action: str  # "full", "patch", "add_component", "remove_component", "update_component"
     payload: dict[str, Any]

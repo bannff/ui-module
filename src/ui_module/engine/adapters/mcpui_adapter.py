@@ -7,15 +7,16 @@ within the chat interface.
 See: https://mcpui.dev/
 """
 
-from typing import Any
 from enum import Enum
+from typing import Any
 
+from ..models import ComponentType, UIComponent, UIView
 from .base import RenderAdapter, RenderResult
-from ..models import UIView, UIComponent, ComponentType
 
 
 class UIResourceType(str, Enum):
     """MCP-UI resource types."""
+
     INLINE_HTML = "inline_html"
     EXTERNAL_URL = "external_url"
     REMOTE_DOM = "remote_dom"
@@ -23,10 +24,10 @@ class UIResourceType(str, Enum):
 
 class McpUiAdapter(RenderAdapter):
     """Renders views as MCP-UI UIResource objects.
-    
+
     This adapter produces output compatible with the MCP-UI protocol,
     allowing MCP clients that support it to render rich UI inline.
-    
+
     Currently outputs inline HTML, but can be extended to support
     external URLs or remote-dom for more complex interactions.
     """
@@ -45,7 +46,7 @@ class McpUiAdapter(RenderAdapter):
     def render_view(self, view: UIView) -> RenderResult:
         """Render view as MCP-UI UIResource."""
         html = self._view_to_html(view)
-        
+
         ui_resource = {
             "type": self._resource_type.value,
             "content": html,
@@ -69,7 +70,7 @@ class McpUiAdapter(RenderAdapter):
     def render_component(self, component: UIComponent) -> RenderResult:
         """Render component as MCP-UI UIResource."""
         html = self._component_to_html(component)
-        
+
         ui_resource = {
             "type": self._resource_type.value,
             "content": html,
@@ -87,12 +88,10 @@ class McpUiAdapter(RenderAdapter):
 
     def _view_to_html(self, view: UIView) -> str:
         """Convert view to HTML string."""
-        components_html = "\n".join(
-            self._component_to_html(c) for c in view.components
-        )
-        
+        components_html = "\n".join(self._component_to_html(c) for c in view.components)
+
         styles = self._generate_styles(view)
-        
+
         return f"""<div class="mcp-ui-view" data-view-id="{view.id}">
   <style>{styles}</style>
   <div class="view-header">
@@ -131,14 +130,17 @@ class McpUiAdapter(RenderAdapter):
         tag_map = {"h1": "h1", "h2": "h2", "h3": "h3", "body": "p", "caption": "span"}
         tag = tag_map.get(variant, "p")
         style = self._styles_to_css(c.styles)
-        return f'<{tag} class="mcp-ui-text mcp-ui-text--{variant}" style="{style}">{content}</{tag}>'
+        return (
+            f'<{tag} class="mcp-ui-text mcp-ui-text--{variant}" style="{style}">{content}</{tag}>'
+        )
 
     def _render_chart(self, c: UIComponent) -> str:
         # Charts would need JS library - output placeholder with data
         chart_type = c.props.get("chart_type", "line")
         title = c.props.get("title", "")
         data = c.props.get("data", [])
-        return f"""<div class="mcp-ui-chart" data-chart-type="{chart_type}" data-component-id="{c.id}">
+        return f"""<div class="mcp-ui-chart" data-chart-type="{chart_type}" \
+data-component-id="{c.id}">
   <div class="chart-title">{title}</div>
   <div class="chart-placeholder">[{chart_type.upper()} CHART - {len(data)} data points]</div>
   <script type="application/json">{self._json_encode(data)}</script>
@@ -147,13 +149,17 @@ class McpUiAdapter(RenderAdapter):
     def _render_table(self, c: UIComponent) -> str:
         columns = c.props.get("columns", [])
         rows = c.props.get("rows", [])
-        
-        header = "<tr>" + "".join(f"<th>{col.get('label', col.get('key', ''))}" for col in columns) + "</tr>"
+
+        header = (
+            "<tr>"
+            + "".join(f"<th>{col.get('label', col.get('key', ''))}" for col in columns)
+            + "</tr>"
+        )
         body_rows = []
         for row in rows:
             cells = "".join(f"<td>{row.get(col.get('key', ''), '')}" for col in columns)
             body_rows.append(f"<tr>{cells}</tr>")
-        
+
         return f"""<table class="mcp-ui-table" data-component-id="{c.id}">
   <thead>{header}</thead>
   <tbody>{chr(10).join(body_rows)}</tbody>
@@ -165,13 +171,15 @@ class McpUiAdapter(RenderAdapter):
         unit = c.props.get("unit", "")
         trend = c.props.get("trend", "")
         trend_value = c.props.get("trend_value", "")
-        
+
         trend_html = ""
         if trend:
             trend_icon = {"up": "↑", "down": "↓", "flat": "→"}.get(trend, "")
             trend_class = f"trend--{trend}"
-            trend_html = f'<span class="metric-trend {trend_class}">{trend_icon} {trend_value}</span>'
-        
+            trend_html = (
+                f'<span class="metric-trend {trend_class}">{trend_icon} {trend_value}</span>'
+            )
+
         return f"""<div class="mcp-ui-metric" data-component-id="{c.id}">
   <div class="metric-label">{label}</div>
   <div class="metric-value">{value}<span class="metric-unit">{unit}</span></div>
@@ -182,9 +190,9 @@ class McpUiAdapter(RenderAdapter):
         title = c.props.get("title", "")
         subtitle = c.props.get("subtitle", "")
         content = c.props.get("content", "")
-        
+
         children_html = "\n".join(self._component_to_html(child) for child in c.children)
-        
+
         return f"""<div class="mcp-ui-card" data-component-id="{c.id}">
   <div class="card-header">
     <div class="card-title">{title}</div>
@@ -196,19 +204,21 @@ class McpUiAdapter(RenderAdapter):
     def _render_alert(self, c: UIComponent) -> str:
         message = c.props.get("message", "")
         severity = c.props.get("severity", "info")
-        return f'<div class="mcp-ui-alert mcp-ui-alert--{severity}" data-component-id="{c.id}">{message}</div>'
+        css_class = f"mcp-ui-alert mcp-ui-alert--{severity}"
+        return f'<div class="{css_class}" data-component-id="{c.id}">{message}</div>'
 
     def _render_progress(self, c: UIComponent) -> str:
         value = c.props.get("value", 0)
         label = c.props.get("label", "")
         variant = c.props.get("variant", "linear")
-        
+
         if variant == "circular":
-            return f"""<div class="mcp-ui-progress mcp-ui-progress--circular" data-component-id="{c.id}">
+            return f"""<div class="mcp-ui-progress mcp-ui-progress--circular" \
+data-component-id="{c.id}">
   <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" stroke-dasharray="{value}, 100"/></svg>
   <span class="progress-label">{label} {value}%</span>
 </div>"""
-        
+
         return f"""<div class="mcp-ui-progress mcp-ui-progress--linear" data-component-id="{c.id}">
   <div class="progress-label">{label}</div>
   <div class="progress-bar"><div class="progress-fill" style="width: {value}%"></div></div>
@@ -218,7 +228,7 @@ class McpUiAdapter(RenderAdapter):
     def _render_form(self, c: UIComponent) -> str:
         fields = c.props.get("fields", [])
         submit_label = c.props.get("submit_label", "Submit")
-        
+
         fields_html = []
         for field in fields:
             field_type = field.get("type", "text")
@@ -228,7 +238,7 @@ class McpUiAdapter(RenderAdapter):
   <label for="{name}">{label}</label>
   <input type="{field_type}" name="{name}" id="{name}" />
 </div>""")
-        
+
         return f"""<form class="mcp-ui-form" data-component-id="{c.id}">
   {chr(10).join(fields_html)}
   <button type="submit">{submit_label}</button>
@@ -237,7 +247,8 @@ class McpUiAdapter(RenderAdapter):
     def _render_button(self, c: UIComponent) -> str:
         label = c.props.get("label", "Button")
         variant = c.props.get("variant", "primary")
-        return f'<button class="mcp-ui-button mcp-ui-button--{variant}" data-component-id="{c.id}">{label}</button>'
+        css_class = f"mcp-ui-button mcp-ui-button--{variant}"
+        return f'<button class="{css_class}" data-component-id="{c.id}">{label}</button>'
 
     def _render_image(self, c: UIComponent) -> str:
         src = c.props.get("src", "")
@@ -252,7 +263,12 @@ class McpUiAdapter(RenderAdapter):
         return f'<{tag} class="mcp-ui-list" data-component-id="{c.id}">{items_html}</{tag}>'
 
     def _render_custom(self, c: UIComponent) -> str:
-        return f'<div class="mcp-ui-custom" data-component-id="{c.id}" data-type="{c.component_type.value}">{self._json_encode(c.props)}</div>'
+        data_type = c.component_type.value
+        json_props = self._json_encode(c.props)
+        return (
+            f'<div class="mcp-ui-custom" data-component-id="{c.id}" '
+            f'data-type="{data_type}">{json_props}</div>'
+        )
 
     def _styles_to_css(self, styles: dict[str, str]) -> str:
         return "; ".join(f"{k}: {v}" for k, v in styles.items())
@@ -261,7 +277,9 @@ class McpUiAdapter(RenderAdapter):
         css_parts = []
         if layout.get("type") == "grid":
             cols = layout.get("columns", 1)
-            css_parts.append(f"display: grid; grid-template-columns: repeat({cols}, 1fr); gap: 1rem")
+            css_parts.append(
+                f"display: grid; grid-template-columns: repeat({cols}, 1fr); gap: 1rem"
+            )
         elif layout.get("type") == "flex":
             direction = layout.get("direction", "row")
             css_parts.append(f"display: flex; flex-direction: {direction}; gap: 1rem")
@@ -290,4 +308,5 @@ class McpUiAdapter(RenderAdapter):
 
     def _json_encode(self, data: Any) -> str:
         import json
+
         return json.dumps(data)

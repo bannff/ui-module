@@ -1,6 +1,5 @@
 """Tests for UIRuntime."""
 
-import pytest
 from ui_module.engine import UIRuntime, reset_runtime
 
 
@@ -15,7 +14,7 @@ class TestUIRuntime:
         """Should initialize runtime."""
         runtime = UIRuntime()
         runtime.initialize()
-        
+
         assert runtime._initialized is True
         assert runtime.settings is not None
         assert runtime.view_manager is not None
@@ -24,9 +23,9 @@ class TestUIRuntime:
         """Should return capabilities."""
         runtime = UIRuntime()
         runtime.initialize()
-        
+
         caps = runtime.get_capabilities()
-        
+
         assert caps["module"] == "ui-module"
         assert "version" in caps
         assert "schema_version" in caps
@@ -37,9 +36,9 @@ class TestUIRuntime:
         """Should return healthy status."""
         runtime = UIRuntime()
         runtime.initialize()
-        
+
         health = runtime.health_check()
-        
+
         assert health["status"] == "healthy"
         assert health["checks"]["initialized"] is True
         assert health["checks"]["store"]["status"] == "ok"
@@ -48,18 +47,18 @@ class TestUIRuntime:
         """Should return unhealthy when not initialized."""
         runtime = UIRuntime()
         # Don't initialize
-        
+
         health = runtime.health_check()
-        
+
         assert health["status"] == "unhealthy"
         assert health["checks"]["initialized"] is False
 
     def test_describe_config_schema(self):
         """Should return config schema."""
         runtime = UIRuntime()
-        
+
         schema = runtime.describe_config_schema()
-        
+
         assert "$schema" in schema
         assert "properties" in schema
         assert "settings" in schema["properties"]
@@ -69,12 +68,12 @@ class TestUIRuntime:
         """Should return view registry."""
         runtime = UIRuntime()
         runtime.initialize()
-        
+
         # Create a view
         runtime.view_manager.create_view(name="Test View")
-        
+
         registry = runtime.get_view_registry()
-        
+
         assert registry["total"] == 1
         assert len(registry["views"]) == 1
         assert registry["views"][0]["name"] == "Test View"
@@ -83,9 +82,9 @@ class TestUIRuntime:
         """Should return authoring status."""
         runtime = UIRuntime()
         runtime.initialize()
-        
+
         status = runtime.get_authoring_status()
-        
+
         assert "enabled" in status
         assert "config_dir" in status
         assert "views_dir" in status

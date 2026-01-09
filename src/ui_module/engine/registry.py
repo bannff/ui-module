@@ -10,6 +10,7 @@ from .models import ComponentType, UIComponent
 @dataclass
 class ComponentDefinition:
     """Definition of a registered component type."""
+
     component_type: ComponentType
     name: str
     description: str
@@ -34,7 +35,7 @@ class ComponentDefinition:
 
 class ComponentRegistry:
     """Registry for UI component definitions.
-    
+
     Manages available component types and their schemas,
     allowing agents to discover what UI primitives are available.
     """
@@ -54,7 +55,10 @@ class ComponentRegistry:
                     "type": "object",
                     "properties": {
                         "content": {"type": "string"},
-                        "variant": {"type": "string", "enum": ["h1", "h2", "h3", "body", "caption"]},
+                        "variant": {
+                            "type": "string",
+                            "enum": ["h1", "h2", "h3", "body", "caption"],
+                        },
                     },
                     "required": ["content"],
                 },
@@ -67,7 +71,10 @@ class ComponentRegistry:
                 schema={
                     "type": "object",
                     "properties": {
-                        "chart_type": {"type": "string", "enum": ["line", "bar", "pie", "area", "scatter", "donut"]},
+                        "chart_type": {
+                            "type": "string",
+                            "enum": ["line", "bar", "pie", "area", "scatter", "donut"],
+                        },
                         "data": {"type": "array"},
                         "title": {"type": "string"},
                         "x_axis": {"type": "string"},
@@ -145,7 +152,10 @@ class ComponentRegistry:
                     "type": "object",
                     "properties": {
                         "message": {"type": "string"},
-                        "severity": {"type": "string", "enum": ["info", "success", "warning", "error"]},
+                        "severity": {
+                            "type": "string",
+                            "enum": ["info", "success", "warning", "error"],
+                        },
                         "dismissible": {"type": "boolean"},
                     },
                     "required": ["message"],
@@ -194,11 +204,11 @@ class ComponentRegistry:
         defn = self._components.get(component_type)
         merged_props = {}
         merged_styles = {}
-        
+
         if defn:
             merged_props = {**defn.default_props}
             merged_styles = {**defn.default_styles}
-        
+
         if props:
             merged_props.update(props)
         if styles:
@@ -213,6 +223,4 @@ class ComponentRegistry:
 
     def to_dict(self) -> dict[str, Any]:
         """Export registry as dictionary."""
-        return {
-            "components": [d.to_dict() for d in self._components.values()]
-        }
+        return {"components": [d.to_dict() for d in self._components.values()]}

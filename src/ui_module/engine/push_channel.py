@@ -1,20 +1,20 @@
 """Push channel for real-time UI updates to connected clients."""
 
 import asyncio
-import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Awaitable
 from enum import Enum
+from typing import Any, Awaitable, Callable
 
-from .models import ViewUpdate, UIView
+from .models import ViewUpdate
 
 logger = logging.getLogger(__name__)
 
 
 class ChannelType(str, Enum):
     """Types of push channels."""
+
     WEBSOCKET = "websocket"
     SSE = "sse"
     CALLBACK = "callback"
@@ -23,6 +23,7 @@ class ChannelType(str, Enum):
 @dataclass
 class ClientConnection:
     """Represents a connected client."""
+
     client_id: str
     channel_type: ChannelType
     subscribed_views: set[str] = field(default_factory=set)
@@ -46,7 +47,7 @@ class ClientConnection:
 
 class PushChannel:
     """Manages real-time push updates to connected UI clients.
-    
+
     This is the core mechanism for agent-driven UI updates.
     When an agent modifies a view, the PushChannel broadcasts
     the update to all subscribed clients.
@@ -104,11 +105,11 @@ class PushChannel:
 
     async def push(self, update: ViewUpdate) -> int:
         """Push an update to all subscribed clients.
-        
+
         Returns the number of clients that received the update.
         """
         recipients = 0
-        
+
         for client_id, connection in self._clients.items():
             # Check if client is subscribed to this view (or subscribed to "*" for all)
             if update.view_id in connection.subscribed_views or "*" in connection.subscribed_views:
@@ -163,7 +164,8 @@ class PushChannel:
     def get_subscribers(self, view_id: str) -> list[ClientConnection]:
         """Get all clients subscribed to a view."""
         return [
-            c for c in self._clients.values()
+            c
+            for c in self._clients.values()
             if view_id in c.subscribed_views or "*" in c.subscribed_views
         ]
 

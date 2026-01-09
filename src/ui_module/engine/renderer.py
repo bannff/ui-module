@@ -1,7 +1,9 @@
-import yaml
 import os
 from typing import Any, Dict
+
+import yaml
 from jinja2 import Environment, FileSystemLoader
+
 from .models import View
 
 

@@ -1,9 +1,11 @@
-import pytest
 import os
 import shutil
 import tempfile
+
+import pytest
 import yaml
-from ui_module.engine.runtime import Runtime
+
+from ui_module.engine.runtime import UIRuntime
 
 
 @pytest.fixture
@@ -23,4 +25,4 @@ def config_dir():
 
 @pytest.fixture
 def runtime(config_dir):
-    return Runtime(config_dir)
+    return UIRuntime(config_dir)
