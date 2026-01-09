@@ -23,10 +23,7 @@ from .engine.runtime import UIRuntime, get_runtime
 logger = logging.getLogger(__name__)
 
 # Initialize MCP server
-mcp = FastMCP(
-    "ui-module",
-    description="Agent-driven UI management with real-time push updates",
-)
+mcp = FastMCP("ui-module")
 
 
 def _get_runtime() -> UIRuntime:
@@ -49,6 +46,7 @@ def _parse_envelope(envelope: dict[str, Any] | None) -> ContextEnvelope:
 def resource_all_components() -> str:
     """List all available UI component types with their schemas."""
     runtime = _get_runtime()
+    assert runtime.view_manager is not None
     result = res.get_all_components_resource(runtime.view_manager.registry)
     return result["content"]
 
@@ -57,6 +55,7 @@ def resource_all_components() -> str:
 def resource_component_schema(component_type: str) -> str:
     """Get the JSON schema for a specific component type."""
     runtime = _get_runtime()
+    assert runtime.view_manager is not None
     result = res.get_component_schema_resource(component_type, runtime.view_manager.registry)
     return result["content"]
 
@@ -288,6 +287,7 @@ def ui_list_resources() -> dict[str, Any]:
     that agents can read for context.
     """
     runtime = _get_runtime()
+    assert runtime.view_manager is not None
     resources = res.list_all_resources(runtime.view_manager.registry, runtime.view_manager)
     return {
         "resources": resources,
@@ -575,7 +575,7 @@ def ui_create_view(
 
     layout = {"type": layout_type}
     if layout_type == "grid":
-        layout["columns"] = layout_columns
+        layout["columns"] = layout_columns  # type: ignore[assignment]
 
     view = runtime.view_manager.create_view(name=name, view_id=view_id, layout=layout)
     return {"created": True, "view": view.to_dict(), "request_id": ctx.request_id}

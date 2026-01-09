@@ -4,7 +4,7 @@ from typing import Any, Dict
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
-from .models import View
+from .models import UIView
 
 
 class Renderer:
@@ -21,7 +21,7 @@ class Renderer:
 
         self.jinja_env = Environment(loader=FileSystemLoader(self.views_dir))
 
-    def render_view(self, view_path: str, context: Dict[str, Any]) -> View:
+    def render_view(self, view_path: str, context: Dict[str, Any]) -> UIView:
         """
         Loads a view definition, renders it with context, and parses it into a View model.
         view_path: relative path to the view file inside config/views (e.g., "dashboard.yaml")
@@ -34,7 +34,7 @@ class Renderer:
             rendered_yaml = template.render(**context)
             view_dict = yaml.safe_load(rendered_yaml)
 
-            return View(**view_dict)
+            return UIView(**view_dict)
         except Exception as e:
             # In a real app, specific custom exceptions would be better
             raise ValueError(f"Failed to render view '{view_path}': {str(e)}")

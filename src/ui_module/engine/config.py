@@ -141,10 +141,11 @@ class ConfigLoader:
         try:
             resolved = path.resolve()
             config_resolved = self.config_dir.resolve()
-            if not str(resolved).startswith(str(config_resolved)):
-                raise ValueError(f"Path traversal detected: {path}")
         except Exception as e:
             raise ValueError(f"Invalid path: {path}") from e
+
+        if not str(resolved).startswith(str(config_resolved)):
+            raise ValueError(f"Path traversal detected: {path}")
 
     def load_settings(self) -> UISettings:
         """Load settings from config/settings.yaml."""

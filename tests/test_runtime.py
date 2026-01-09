@@ -40,7 +40,7 @@ class TestUIRuntime:
         health = runtime.health_check()
 
         assert health["status"] == "healthy"
-        assert health["checks"]["initialized"] is True
+        assert health["checks"]["initialized"]["status"] == "ok"
         assert health["checks"]["store"]["status"] == "ok"
 
     def test_health_check_not_initialized(self):
@@ -51,7 +51,7 @@ class TestUIRuntime:
         health = runtime.health_check()
 
         assert health["status"] == "unhealthy"
-        assert health["checks"]["initialized"] is False
+        assert health["checks"]["initialized"]["status"] == "not_initialized"
 
     def test_describe_config_schema(self):
         """Should return config schema."""

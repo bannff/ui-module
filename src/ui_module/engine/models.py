@@ -170,3 +170,14 @@ class ViewStore(Protocol):
     def list_views(self) -> list[str]:
         """List all view IDs."""
         ...
+
+
+@dataclass
+class SessionState:
+    """Session state for memory store (legacy - not currently used)."""
+
+    session_id: str
+    data: dict[str, Any] = field(default_factory=dict)
+    current_path: str = "/"
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)

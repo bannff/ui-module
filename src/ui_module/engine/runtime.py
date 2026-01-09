@@ -130,15 +130,22 @@ class UIRuntime:
         # Check initialization
         if not self._initialized:
             status = "unhealthy"
-            checks["initialized"] = False
+            checks["initialized"] = {"status": "not_initialized"}
+            # Return early if not initialized
+            return {
+                "status": status,
+                "checks": checks,
+                "uptime_seconds": None,
+                "last_error": self._last_error,
+            }
         else:
-            checks["initialized"] = True
+            checks["initialized"] = {"status": "ok"}
 
         # Check store connectivity
         try:
             if self.view_manager:
                 view_count = len(self.view_manager.store.list_views())
-                checks["store"] = {"status": "ok", "view_count": view_count}
+                checks["store"] = {"status": "ok", "view_count": view_count}  # type: ignore[dict-item]
             else:
                 checks["store"] = {"status": "not_initialized"}
                 status = "degraded"
@@ -150,7 +157,7 @@ class UIRuntime:
         try:
             if self.view_manager:
                 client_count = len(self.view_manager.push_channel.list_clients())
-                checks["push_channel"] = {"status": "ok", "connected_clients": client_count}
+                checks["push_channel"] = {"status": "ok", "connected_clients": client_count}  # type: ignore[dict-item]
             else:
                 checks["push_channel"] = {"status": "not_initialized"}
         except Exception as e:
