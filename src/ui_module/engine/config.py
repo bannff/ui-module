@@ -3,15 +3,15 @@
 Supports config_dir pattern for portable, config-driven behavior.
 """
 
-import os
 import logging
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from .models import UIView, UIComponent, ComponentType
+from .models import ComponentType, UIComponent, UIView
 
 logger = logging.getLogger(__name__)
 
@@ -19,26 +19,27 @@ logger = logging.getLogger(__name__)
 @dataclass
 class UISettings:
     """UI module settings loaded from config/settings.yaml."""
+
     # Authoring
     authoring_enabled: bool = False
-    
+
     # Push channel
     push_enabled: bool = True
     max_clients: int = 100
-    
+
     # Storage
     storage_backend: str = "memory"  # memory, redis, filesystem
     storage_path: str | None = None
-    
+
     # Adapters
     default_adapter: str = "json"
     enabled_adapters: list[str] = field(default_factory=lambda: ["json", "mcp-ui"])
-    
+
     # Limits
     max_views: int = 1000
     max_components_per_view: int = 100
     max_history_entries: int = 1000
-    
+
     # Feature flags
     feature_flags: dict[str, bool] = field(default_factory=dict)
 
@@ -79,6 +80,7 @@ class UISettings:
 @dataclass
 class ViewDefinition:
     """A view definition loaded from config/views/*.yaml."""
+
     id: str
     name: str
     description: str = ""
@@ -98,7 +100,7 @@ class ViewDefinition:
                 styles=comp_def.get("styles", {}),
             )
             components.append(component)
-        
+
         return UIView(
             id=self.id,
             name=self.name,
@@ -110,7 +112,7 @@ class ViewDefinition:
 
 class ConfigLoader:
     """Loads configuration from config_dir.
-    
+
     Expected structure:
         config_dir/
             settings.yaml
@@ -130,7 +132,7 @@ class ConfigLoader:
         env_dir = os.environ.get("UI_CONFIG_DIR")
         if env_dir:
             return Path(env_dir)
-        
+
         # Default to ./config
         return Path("./config")
 
@@ -139,32 +141,33 @@ class ConfigLoader:
         try:
             resolved = path.resolve()
             config_resolved = self.config_dir.resolve()
-            if not str(resolved).startswith(str(config_resolved)):
-                raise ValueError(f"Path traversal detected: {path}")
         except Exception as e:
             raise ValueError(f"Invalid path: {path}") from e
+
+        if not str(resolved).startswith(str(config_resolved)):
+            raise ValueError(f"Path traversal detected: {path}")
 
     def load_settings(self) -> UISettings:
         """Load settings from config/settings.yaml."""
         if self._settings:
             return self._settings
-        
+
         settings_path = self.config_dir / "settings.yaml"
-        
+
         if not settings_path.exists():
             logger.info(f"No settings.yaml found at {settings_path}, using defaults")
             self._settings = UISettings()
             return self._settings
-        
+
         self._validate_path(settings_path)
-        
+
         with open(settings_path) as f:
             data = yaml.safe_load(f) or {}
-        
+
         # Override with environment variables
         if os.environ.get("AUTHORING_ENABLED", "").lower() == "true":
             data["authoring_enabled"] = True
-        
+
         self._settings = UISettings.from_dict(data)
         logger.info(f"Loaded settings from {settings_path}")
         return self._settings
@@ -173,21 +176,21 @@ class ConfigLoader:
         """Load view definitions from config/views/*.yaml."""
         if self._view_definitions:
             return self._view_definitions
-        
+
         views_dir = self.config_dir / "views"
-        
+
         if not views_dir.exists():
             logger.info(f"No views directory at {views_dir}")
             return {}
-        
+
         self._validate_path(views_dir)
-        
+
         for yaml_file in views_dir.glob("*.yaml"):
             self._validate_path(yaml_file)
             try:
                 with open(yaml_file) as f:
                     data = yaml.safe_load(f) or {}
-                
+
                 view_id = data.get("id", yaml_file.stem)
                 definition = ViewDefinition(
                     id=view_id,
@@ -202,7 +205,7 @@ class ConfigLoader:
                 logger.debug(f"Loaded view definition: {view_id}")
             except Exception as e:
                 logger.error(f"Failed to load view from {yaml_file}: {e}")
-        
+
         logger.info(f"Loaded {len(self._view_definitions)} view definitions")
         return self._view_definitions
 
@@ -226,14 +229,20 @@ class ConfigLoader:
                         "authoring_enabled": {"type": "boolean", "default": False},
                         "push_enabled": {"type": "boolean", "default": True},
                         "max_clients": {"type": "integer", "default": 100},
-                        "storage_backend": {"type": "string", "enum": ["memory", "redis", "filesystem"]},
+                        "storage_backend": {
+                            "type": "string",
+                            "enum": ["memory", "redis", "filesystem"],
+                        },
                         "storage_path": {"type": "string"},
                         "default_adapter": {"type": "string", "default": "json"},
                         "enabled_adapters": {"type": "array", "items": {"type": "string"}},
                         "max_views": {"type": "integer", "default": 1000},
                         "max_components_per_view": {"type": "integer", "default": 100},
                         "max_history_entries": {"type": "integer", "default": 1000},
-                        "feature_flags": {"type": "object", "additionalProperties": {"type": "boolean"}},
+                        "feature_flags": {
+                            "type": "object",
+                            "additionalProperties": {"type": "boolean"},
+                        },
                     },
                 },
                 "view_definition": {

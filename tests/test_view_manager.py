@@ -1,11 +1,10 @@
 """Tests for ViewManager."""
 
 import pytest
+
 from ui_module.engine import (
-    ViewManager,
     ComponentType,
-    UIView,
-    UIComponent,
+    ViewManager,
 )
 
 
@@ -16,7 +15,7 @@ class TestViewManager:
         """Should create a new view."""
         manager = ViewManager()
         view = manager.create_view(name="Test Dashboard")
-        
+
         assert view.name == "Test Dashboard"
         assert view.id is not None
         assert view.version == 1
@@ -25,14 +24,14 @@ class TestViewManager:
         """Should create view with custom ID."""
         manager = ViewManager()
         view = manager.create_view(name="Test", view_id="my-view")
-        
+
         assert view.id == "my-view"
 
     def test_get_view(self):
         """Should retrieve view by ID."""
         manager = ViewManager()
         created = manager.create_view(name="Test")
-        
+
         retrieved = manager.get_view(created.id)
         assert retrieved is not None
         assert retrieved.name == "Test"
@@ -46,7 +45,7 @@ class TestViewManager:
         """Should delete a view."""
         manager = ViewManager()
         view = manager.create_view(name="Test")
-        
+
         assert manager.delete_view(view.id) is True
         assert manager.get_view(view.id) is None
 
@@ -55,7 +54,7 @@ class TestViewManager:
         manager = ViewManager()
         manager.create_view(name="View 1")
         manager.create_view(name="View 2")
-        
+
         views = manager.list_views()
         assert len(views) == 2
 
@@ -66,7 +65,7 @@ class TestViewManager:
             component_type="text",
             props={"content": "Hello"},
         )
-        
+
         assert component.component_type == ComponentType.TEXT
         assert component.props["content"] == "Hello"
 
@@ -79,9 +78,9 @@ class TestViewManager:
             component_type="metric",
             props={"label": "Users", "value": 100},
         )
-        
+
         updated = await manager.add_component(view.id, component)
-        
+
         assert updated is not None
         assert len(updated.components) == 1
         assert updated.components[0].props["label"] == "Users"
@@ -96,13 +95,13 @@ class TestViewManager:
             props={"label": "Users", "value": 100},
         )
         await manager.add_component(view.id, component)
-        
+
         updated = await manager.update_component(
             view.id,
             component.id,
             props={"value": 200},
         )
-        
+
         assert updated is not None
         assert updated.props["value"] == 200
         assert updated.props["label"] == "Users"  # unchanged
@@ -114,9 +113,9 @@ class TestViewManager:
         view = manager.create_view(name="Test")
         component = manager.create_component(component_type="text", props={"content": "Hi"})
         await manager.add_component(view.id, component)
-        
+
         removed = await manager.remove_component(view.id, component.id)
-        
+
         assert removed is True
         updated_view = manager.get_view(view.id)
         assert len(updated_view.components) == 0
@@ -125,9 +124,9 @@ class TestViewManager:
         """Should render view as JSON."""
         manager = ViewManager()
         view = manager.create_view(name="Test")
-        
+
         result = manager.render(view.id, adapter_type="json")
-        
+
         assert result is not None
         assert result.adapter_type == "json"
         assert result.content["name"] == "Test"
@@ -136,9 +135,9 @@ class TestViewManager:
         """Should render view as MCP-UI."""
         manager = ViewManager()
         view = manager.create_view(name="Test")
-        
+
         result = manager.render(view.id, adapter_type="mcp-ui")
-        
+
         assert result is not None
         assert result.adapter_type == "mcp-ui"
         assert "inline_html" in result.content["type"]
@@ -147,6 +146,6 @@ class TestViewManager:
         """Should list available adapters."""
         manager = ViewManager()
         adapters = manager.list_adapters()
-        
+
         assert "json" in adapters
         assert "mcp-ui" in adapters

@@ -3,14 +3,15 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Any
 
-from ..models import UIView, UIComponent
+from ..models import UIComponent, UIView
 
 
 @dataclass
 class RenderResult:
     """Result of rendering a view through an adapter."""
+
     adapter_type: str
     content: Any  # The rendered output (format depends on adapter)
     content_type: str  # MIME type or format identifier
@@ -30,7 +31,7 @@ class RenderResult:
 
 class RenderAdapter(ABC):
     """Base class for render adapters.
-    
+
     Adapters transform UIView/UIComponent into target-specific formats.
     """
 

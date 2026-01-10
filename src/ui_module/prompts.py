@@ -10,25 +10,26 @@ from typing import Any
 def get_prompt(prompt_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
     """Get a prompt by name with arguments filled in."""
     prompts = _get_prompts()
-    
+
     if prompt_name not in prompts:
         return {
             "name": prompt_name,
             "error": f"Unknown prompt: {prompt_name}",
         }
-    
+
     prompt = prompts[prompt_name]
     content = prompt["template"]
-    
+
     # Fill in arguments
     if arguments:
         for key, value in arguments.items():
             placeholder = "{" + key + "}"
             if isinstance(value, (list, dict)):
                 import json
+
                 value = json.dumps(value, indent=2)
             content = content.replace(placeholder, str(value))
-    
+
     return {
         "name": prompt_name,
         "description": prompt["description"],
@@ -90,7 +91,7 @@ def _get_prompts() -> dict[str, dict[str, Any]]:
 - Use 3-6 metrics maximum
 - Choose chart types based on data:
   - Time series → line chart
-  - Categories → bar chart  
+  - Categories → bar chart
   - Proportions → pie chart
 - Include trends on metrics when comparing periods
 - Use human-readable values ($50K not $50000)
@@ -171,7 +172,11 @@ def _get_prompts() -> dict[str, dict[str, Any]]:
             "description": "Update multiple metrics on a dashboard",
             "arguments": [
                 {"name": "view_id", "description": "Dashboard view ID", "required": True},
-                {"name": "updates", "description": "Metric updates (label → new value)", "required": True},
+                {
+                    "name": "updates",
+                    "description": "Metric updates (label → new value)",
+                    "required": True,
+                },
             ],
             "template": """Update metrics on dashboard `{view_id}` with new values:
 
@@ -236,7 +241,7 @@ def _get_prompts() -> dict[str, dict[str, Any]]:
      - severity "success" for healthy
      - severity "warning" for degraded
      - severity "error" for down
-   
+
 5. Add metric components for key health indicators:
    - Uptime percentage
    - Response time

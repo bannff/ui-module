@@ -4,18 +4,18 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from .models import UIView, UIComponent, ComponentType, ViewUpdate
-from .registry import ComponentRegistry
-from .store.view_store import InMemoryViewStore
-from .push_channel import PushChannel
 from .adapters.base import RenderAdapter, RenderResult
 from .adapters.json_adapter import JsonAdapter
 from .adapters.mcpui_adapter import McpUiAdapter
+from .models import ComponentType, UIComponent, UIView, ViewUpdate
+from .push_channel import PushChannel
+from .registry import ComponentRegistry
+from .store.view_store import InMemoryViewStore
 
 
 class ViewManager:
     """Central manager for UI views and components.
-    
+
     Orchestrates:
     - Component creation via registry
     - View persistence via store
@@ -32,7 +32,7 @@ class ViewManager:
         self.store = store or InMemoryViewStore()
         self.push_channel = push_channel or PushChannel()
         self.registry = registry or ComponentRegistry()
-        
+
         # Default adapters
         self._adapters: dict[str, RenderAdapter] = {
             "json": JsonAdapter(),
@@ -52,7 +52,7 @@ class ViewManager:
         return list(self._adapters.keys())
 
     # View operations
-    
+
     def create_view(
         self,
         name: str,
@@ -94,7 +94,7 @@ class ViewManager:
         """Create a component using the registry."""
         if isinstance(component_type, str):
             component_type = ComponentType(component_type)
-        
+
         return self.registry.create_component(
             component_id=component_id or str(uuid.uuid4()),
             component_type=component_type,
@@ -117,7 +117,7 @@ class ViewManager:
             view.components.insert(position, component)
         else:
             view.components.append(component)
-        
+
         view.updated_at = datetime.utcnow()
         self.store.save(view)
 
@@ -159,7 +159,7 @@ class ViewManager:
         if styles:
             component.styles.update(styles)
         component.updated_at = datetime.utcnow()
-        
+
         view.updated_at = datetime.utcnow()
         self.store.save(view)
 
@@ -191,7 +191,7 @@ class ViewManager:
 
         original_len = len(view.components)
         view.components = [c for c in view.components if c.id != component_id]
-        
+
         if len(view.components) == original_len:
             return False
 

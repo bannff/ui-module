@@ -8,7 +8,7 @@ from ..models import UIView, ViewUpdate
 
 class InMemoryViewStore:
     """In-memory view store implementation.
-    
+
     Suitable for development and testing. For production,
     use RedisViewStore or implement a persistent store.
     """

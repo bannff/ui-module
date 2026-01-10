@@ -1,9 +1,10 @@
 """Tests for PushChannel."""
 
 import pytest
+
 from ui_module.engine import (
-    PushChannel,
     ChannelType,
+    PushChannel,
     ViewUpdate,
 )
 
@@ -15,7 +16,7 @@ class TestPushChannel:
         """Should connect a client."""
         channel = PushChannel()
         connection = channel.connect("client-1")
-        
+
         assert connection.client_id == "client-1"
         assert connection.channel_type == ChannelType.CALLBACK
 
@@ -23,7 +24,7 @@ class TestPushChannel:
         """Should disconnect a client."""
         channel = PushChannel()
         channel.connect("client-1")
-        
+
         assert channel.disconnect("client-1") is True
         assert channel.get_client("client-1") is None
 
@@ -31,9 +32,9 @@ class TestPushChannel:
         """Should subscribe client to view."""
         channel = PushChannel()
         channel.connect("client-1")
-        
+
         assert channel.subscribe("client-1", "view-1") is True
-        
+
         client = channel.get_client("client-1")
         assert "view-1" in client.subscribed_views
 
@@ -42,9 +43,9 @@ class TestPushChannel:
         channel = PushChannel()
         channel.connect("client-1")
         channel.subscribe("client-1", "view-1")
-        
+
         assert channel.unsubscribe("client-1", "view-1") is True
-        
+
         client = channel.get_client("client-1")
         assert "view-1" not in client.subscribed_views
 
@@ -53,22 +54,22 @@ class TestPushChannel:
         """Should push updates to subscribed clients."""
         channel = PushChannel()
         received = []
-        
+
         async def callback(update):
             received.append(update)
-        
+
         channel.connect("client-1", callback=callback)
         channel.subscribe("client-1", "view-1")
-        
+
         update = ViewUpdate(
             view_id="view-1",
             action="full",
             payload={"test": True},
             version=1,
         )
-        
+
         recipients = await channel.push(update)
-        
+
         assert recipients == 1
         assert len(received) == 1
         assert received[0].view_id == "view-1"
@@ -78,22 +79,22 @@ class TestPushChannel:
         """Should push to clients subscribed to all views."""
         channel = PushChannel()
         received = []
-        
+
         async def callback(update):
             received.append(update)
-        
+
         channel.connect("client-1", callback=callback)
         channel.subscribe("client-1", "*")  # Subscribe to all
-        
+
         update = ViewUpdate(
             view_id="any-view",
             action="full",
             payload={},
             version=1,
         )
-        
+
         recipients = await channel.push(update)
-        
+
         assert recipients == 1
 
     @pytest.mark.asyncio
@@ -102,16 +103,16 @@ class TestPushChannel:
         channel = PushChannel()
         channel.connect("client-1")
         channel.subscribe("client-1", "view-1")
-        
+
         update = ViewUpdate(
             view_id="view-2",  # Different view
             action="full",
             payload={},
             version=1,
         )
-        
+
         recipients = await channel.push(update)
-        
+
         assert recipients == 0
 
     def test_list_clients(self):
@@ -119,9 +120,9 @@ class TestPushChannel:
         channel = PushChannel()
         channel.connect("client-1")
         channel.connect("client-2")
-        
+
         clients = channel.list_clients()
-        
+
         assert len(clients) == 2
 
     def test_get_subscribers(self):
@@ -130,8 +131,8 @@ class TestPushChannel:
         channel.connect("client-1")
         channel.connect("client-2")
         channel.subscribe("client-1", "view-1")
-        
+
         subscribers = channel.get_subscribers("view-1")
-        
+
         assert len(subscribers) == 1
         assert subscribers[0].client_id == "client-1"
